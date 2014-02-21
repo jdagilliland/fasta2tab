@@ -10,28 +10,30 @@ charset = string.letters + string.digits
 # the number of characters to use for sequence UUIDs
 n_char = 8
 
+class ClipRecord:
+    def __init__(self, seq_record):
+        self.description = seq_record.description
+        self.seq = seq_record.seq
+        self.SEQUENCE = str(seq_record.seq)
+        # splits description by '|' into key-value pair strings
+        lst_str_keyval = [keyval for keyval in self.description.split('|')]
+        # splits each key value pair string by ':', and creates dictionary
+        try:
+            dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
+                if len(keyval)>0])
+        except:
+            print(lst_str_keyval)
+            raise
+        for key, value in dict_clip_attr.items():
+            setattr(self, key, value)
+        return None
+    pass
 def prune_germline_records(lst_seq_record):
-    return [record for record in lst_seq_record if
+    lst_germline = [record for record in lst_seq_record if
+        record.description[0] =='>']
+    lst_non_germline = [record for record in lst_seq_record if
         record.description[0] !='>']
-
-def parse_clip_attr(seq_record):
-    '''
-    This function accepts a Bio.SeqRecord, and parses the
-    'description' into a dictionary of supplementary 'clip' attributes, with
-    which it then updates the attributes of the SeqRecord.
-    '''
-    # splits description by '|' into key-value pair strings
-    lst_str_keyval = [keyval for keyval in seq_record.description.split('|')]
-    # splits each key value pair string by ':', and creates dictionary
-    try:
-        dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
-            if len(keyval)>0])
-    except:
-        print(lst_str_keyval)
-        raise
-    # updates seq_record with those dictionary items
-    seq_record.__dict__.update(dict_clip_attr)
-    return seq_record
+    return lst_germline, lst_non_germline
 
 def append_uuid(lst_seq_record):
     '''
@@ -58,7 +60,7 @@ def tabname(fastaname):
 def read_fasta_file(fname_fasta):
     '''
     This function will read a clip fasta file, and return a list of some kind
-    of Bio.SeqRecord that will contain all of the metadata about a sequence
+    of object that will contain all of the metadata about a sequence
     and the sequence itself.
     Likely, it will use attribute names like:
     SEQUENCE_ID
@@ -67,7 +69,8 @@ def read_fasta_file(fname_fasta):
     CLONE_ID
     '''
     f = open(fname_fasta,'r')
-    lst_seq_record = [record for record in SeqIO.parse(f,'fasta')]
+    lst_seq_record = [ClipRecord(record) for record in SeqIO.parse(f,'fasta')]
+    
     return lst_seq_record
 
 tpl_cols = (
@@ -121,16 +124,14 @@ def fasta2tab_file(fname):
     #generate an initial list of SeqRecord
     lst_seq_record = read_fasta_file(fname)
     #prune out entries that list germlines
-    lst_seq_record = prune_germline_records(lst_seq_record)
+    lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #parse supplementary attributes
-    for record in lst_seq_record:
-        parse_clip_attr(record)
     #append uuid portion to SEQUENCE_ID
-    append_uuid(lst_seq_record)
+    append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
     tabfname = tabname(fname)
     #write the final list of SeqRecord to the tab file
-    write_tab_file(tabfname, lst_seq_record)
+    write_tab_file(tabfname, lst_clip_seq)
     return None
 
 if __name__ == '__main__':
