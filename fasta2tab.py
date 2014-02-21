@@ -9,12 +9,44 @@ from Bio import SeqIO
 charset = string.letters + string.digits
 # the number of characters to use for sequence UUIDs
 n_char = 8
+# these are the columns to output in the tab file
+tpl_cols = (
+    'SEQUENCE_ID',
+    'SEQUENCE',
+    'FUNCTIONAL',
+    'IN_FRAME',
+    'STOP',
+    'MUTATED_INVARIANT',
+    'INDELS',
+    'V_MATCH',
+    'V_LENGTH',
+    'J_MATCH',
+    'J_LENGTH',
+    'V_CALL',
+    'D_CALL',
+    'J_CALL',
+    'SEQUENCE_GAP',
+    'V_GAP_LENGTH',
+    'N1_LENGTH',
+    'D_5_TRIM',
+    'D_3_TRIM',
+    'N2_LENGTH',
+    'J_5_TRIM',
+    'J_GAP_LENGTH',
+    'JUNCTION_GAP_LENGTH',
+    'JUNCTION',
+    'PRIMER',
+    'CONSCOUNT',
+    'DUPCOUNT',
+    'CLONE',
+    'GERMLINE_GAP_D_MASK',
+    )
 
 class ClipRecord:
     def __init__(self, seq_record):
         self.description = seq_record.description
         self.seq = seq_record.seq
-        self.SEQUENCE = str(seq_record.seq)
+        self.SEQUENCE = str(seq_record.seq).lower()
         # splits description by '|' into key-value pair strings
         lst_str_keyval = [keyval for keyval in self.description.split('|')]
         # splits each key value pair string by ':', and creates dictionary
@@ -26,6 +58,8 @@ class ClipRecord:
             raise
         for key, value in dict_clip_attr.items():
             setattr(self, key, value)
+        if hasattr(self, 'CLONE_ID'):
+            self.CLONE = self.CLONE_ID
         return None
     pass
 def prune_germline_records(lst_seq_record):
@@ -73,10 +107,6 @@ def read_fasta_file(fname_fasta):
     
     return lst_seq_record
 
-tpl_cols = (
-    'SEQUENCE_ID',
-    'CLONE_ID',
-    )
 def write_tab_file(fname_tab,lst_seq_record):
     '''
     This function will take a list of Bio.SeqRecord instances, extract the
@@ -84,13 +114,11 @@ def write_tab_file(fname_tab,lst_seq_record):
     formatted tab file.
     '''
     with open(fname_tab,'w') as f:
-        tab_writer = csv.writer(f, delimiter='\t')
+        tab_writer = csv.DictWriter(f, tpl_cols, extrasaction='ignore', delimiter='\t')
         # write header
-        tab_writer.writerow(tpl_cols)
+        tab_writer.writeheader()
         for seq_record in lst_seq_record:
-            # write row
-            tab_writer.writerow([seq_record.__dict__[field] for field
-                in tpl_cols])
+            tab_writer.writerow(seq_record.__dict__)
             pass
 
 def get_n_uuid(n):
