@@ -1,7 +1,6 @@
 The output tab file still has a number of empty fields, including: [
 INDELS
 D_CALL
-SEQUENCE_GAP
 N1_LENGTH
 D_5_TRIM
 D_3_TRIM

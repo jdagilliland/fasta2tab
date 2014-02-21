@@ -60,6 +60,8 @@ class ClipRecord:
             setattr(self, key, value)
         if hasattr(self, 'CLONE_ID'):
             self.CLONE = self.CLONE_ID
+        if hasattr(self, 'SEQUENCE'):
+            self.SEQUENCE_GAP = self.SEQUENCE
         return None
     pass
 def prune_germline_records(lst_seq_record):
