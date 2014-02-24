@@ -43,10 +43,12 @@ tpl_cols = (
     )
 
 class ClipRecord:
+    mask_char = 'n'
     def __init__(self, seq_record):
-        self.description = seq_record.description
-        self.seq = seq_record.seq
-        self.SEQUENCE = str(seq_record.seq).lower()
+        self.seq_record = seq_record
+        self.description = self.seq_record.description
+        self.seq = self.seq_record.seq
+        self.SEQUENCE = str(self.seq_record.seq).lower()
         # splits description by '|' into key-value pair strings
         lst_str_keyval = [keyval for keyval in self.description.split('|')]
         # splits each key value pair string by ':', and creates dictionary
@@ -63,6 +65,32 @@ class ClipRecord:
         if hasattr(self, 'SEQUENCE'):
             self.SEQUENCE_GAP = self.SEQUENCE
         return None
+    
+    def d_mask(self):
+        '''
+        This method takes the sequence data, uses the fields indicating
+        V_LENGTH and J_LENGTH, and masks what is in between (the D region)
+        with class attribute: mask_char.
+        '''
+        # check to make sure that the ClipRecord instance has all the necessary fields
+        #if not has_attr(self,...)
+        v_length = int(self.V_LENGTH)
+        j_length = int(self.J_LENGTH)
+        length = len(self.SEQUENCE)
+        d_length = length - v_length - j_length
+        lst_seq = list(self.SEQUENCE)
+        
+        if len(lst_seq) != length:
+            print('Length prior to masking')
+            print(length)
+            print('Length after masking')
+            print(len(lst_seq))
+            print(v_length)
+            print(j_length)
+            print(d_length)
+#            raise ValueError('''The sequence has changed in length.
+#                You must mask a different way.''')
+        self.GERMLINE_GAP_D_MASK = ''.join(lst_seq)
     pass
 def prune_germline_records(lst_seq_record):
     lst_germline = [record for record in lst_seq_record if
@@ -156,6 +184,9 @@ def fasta2tab_file(fname):
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #parse supplementary attributes
+    #mask d region
+    for clip_seq in lst_clip_seq:
+        clip_seq.d_mask()
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
