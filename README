@@ -1,0 +1,11 @@
+Usage: fasta2tab.py FILE [...]
+
+Each file that you provide to fasta2tab.py should be a fasta (*.fasta) file
+with a number of esoteric key-value pairs in the description.
+For each file that you provide, fasta2tab.py will generate a tab delimited
+values file (*.tab) which will place some of those keys in appropriate
+columns, as well as compute some new keys from some of the fields provided.
+
+Warning:
+This script is as yet very esoteric, and is thus unlikely to be of great
+widespread use.
