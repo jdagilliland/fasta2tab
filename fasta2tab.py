@@ -65,12 +65,12 @@ class ClipRecord:
         if hasattr(self, 'SEQUENCE'):
             self.SEQUENCE_GAP = self.SEQUENCE
         return None
-    
     def d_mask(self):
         '''
         This method takes the sequence data, uses the fields indicating
         V_LENGTH and J_LENGTH, and masks what is in between (the D region)
-        with class attribute: mask_char.
+        with class attribute: mask_char, outputting to field
+        GERMLINE_GAP_D_MASK.
         '''
         # check to make sure that the ClipRecord instance has all the necessary fields
         #if not has_attr(self,...)
@@ -91,6 +91,14 @@ class ClipRecord:
 #            raise ValueError('''The sequence has changed in length.
 #                You must mask a different way.''')
         self.GERMLINE_GAP_D_MASK = ''.join(lst_seq)
+        pass
+    def d_no_mask(self):
+        '''
+        This method takes the sequence data and copies it into
+        GERMLINE_GAP_D_MASK without actually masking the D region.
+        '''
+        self.GERMLINE_GAP_D_MASK = self.SEQUENCE
+        pass
     pass
 def prune_germline_records(lst_seq_record):
     lst_germline = [record for record in lst_seq_record if
@@ -186,7 +194,7 @@ def fasta2tab_file(fname):
     #parse supplementary attributes
     #mask d region
     for clip_seq in lst_clip_seq:
-        clip_seq.d_mask()
+        clip_seq.d_no_mask()
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
