@@ -10,6 +10,5 @@ JUNCTION
 PRIMER
 CONSCOUNT
 DUPCOUNT
-GERMLINE_GAP_D_MASK
 ]
 which are generally not empty in the provided sample file
