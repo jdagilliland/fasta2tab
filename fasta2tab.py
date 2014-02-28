@@ -67,7 +67,6 @@ class ClipRecord:
         if hasattr(self, 'INDELS'):
             if self.INDELS != 'T':
                 self.INDELS = 'F'
-            else:
         if not hasattr(self, 'INDELS'):
             self.INDELS = 'F'
         return None
@@ -188,7 +187,7 @@ def get_uuid():
     '''
     return ''.join(random.choice(charset) for iI in xrange(n_char))
 
-def fasta2tab_file(fname):
+def fasta2tab_file(fname, mask=False):
     '''
     This function will process a single clip fasta file into a single tab file
     appropriately named.
@@ -199,8 +198,16 @@ def fasta2tab_file(fname):
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #parse supplementary attributes
     #mask d region
-    for clip_seq in lst_clip_seq:
-        clip_seq.d_no_mask()
+    print('mask')
+    print(mask)
+    if mask:
+        print('masking...')
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_mask()
+    else:
+        print('not masking')
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_no_mask()
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
@@ -210,8 +217,16 @@ def fasta2tab_file(fname):
     return None
 
 if __name__ == '__main__':
-    import sys
-    lst_fasta_files = sys.argv[1:]
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Convert FASTA files to TAB files'
+        )
+    parser.add_argument('files', metavar='infiles', nargs='+')
+    parser.add_argument('-m','--mask', action='store_true')
+    argspace = parser.parse_args()
+    print(argspace)
+    lst_fasta_files = argspace.files
+    bool_mask = argspace.mask
     for fname in lst_fasta_files:
-        fasta2tab_file(fname)
+        fasta2tab_file(fname, mask=bool_mask)
 
