@@ -64,6 +64,12 @@ class ClipRecord:
             self.CLONE = self.CLONE_ID
         if hasattr(self, 'SEQUENCE'):
             self.SEQUENCE_GAP = self.SEQUENCE
+        if hasattr(self, 'INDELS'):
+            if self.INDELS != 'T':
+                self.INDELS = 'F'
+            else:
+        if not hasattr(self, 'INDELS'):
+            self.INDELS = 'F'
         return None
     def d_mask(self):
         '''
