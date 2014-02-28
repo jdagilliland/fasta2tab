@@ -1,0 +1,32 @@
+SEQUENCE: sequence
+PRODUCTIVE: has no stop codon
+IN_FRAME: mod(length,3) == 0
+STOP: has stop codon
+MUTATED_INVARIANT: call F for now
+INDELS: Bochao has alignment code (no indels in current data), if it has out
+    of frame gaps, then it is an indel
+V_MATCH: number of nucleotides aligned until end of YYC in V gene
+V_LENGTH: total length of V gene including YYC
+J_MATCH: same as V except start with YW
+J_LENGTH: same as V except start with YW
+V_CALL: name of V gene
+D_CALL: empty, do not identify D genes
+J_CALL: name of J gene
+SEQUENCE_GAP: redundant from SEQUENCE
+V_GAP_LENGTH: length of V gene including '-' & 'N'
+J_GAP_LENGTH: length of J gene including '-' & 'N'
+N1_LENGTH: lenght of N/P additions before D (we cannot calculate)
+N2_LENGTH: lenght of N/P additions after D (we cannot calculate)
+D_5_TRIM: unk/
+D_3_TRIM: unk/
+J_5_TRIM: could calculate, but not necessary
+JUNCTION: junction/CDR3 sequence
+JUNCTION_GAP_LENGTH: length of junction region (use CDR3) (lenght of JUNCTION)
+GAP_METHOD: always IMGT
+*_CALL_GENOTYPE: unk/ 
+CLONE_ID: should match CLONE_ID from a germline sequence
+ISOTYPE: unnecessary unless provided
+TISSUE: unnecessary unless provided
+SUBJECT_ID: unnecessary unless provided
+
+the CDR3 starts after the C of YYCAR and ends before the W of YW
