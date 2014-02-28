@@ -84,6 +84,7 @@ class ClipRecord:
         length = len(self.SEQUENCE)
         d_length = length - v_length - j_length
         lst_seq = list(self.SEQUENCE)
+        lst_seq[v_length:v_length+d_length] = d_length * self.mask_char
         
         if len(lst_seq) != length:
             print('Length prior to masking')
