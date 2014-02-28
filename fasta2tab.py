@@ -41,7 +41,8 @@ tpl_cols = (
     'CLONE',
     'GERMLINE_GAP_D_MASK',
     )
-
+class HeaderError(ValueError):
+    pass
 class ClipRecord:
     mask_char = 'n'
     def __init__(self, seq_record):
@@ -50,14 +51,14 @@ class ClipRecord:
         self.seq = self.seq_record.seq
         self.SEQUENCE = str(self.seq_record.seq).lower()
         # splits description by '|' into key-value pair strings
-        lst_str_keyval = [keyval for keyval in self.description.split('|')]
+        lst_str_keyval = [keyval for keyval in self.description.split('|') if
+            len(keyval)>0]
         # splits each key value pair string by ':', and creates dictionary
         try:
             dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
                 if len(keyval)>0])
         except:
-            print(lst_str_keyval)
-            raise
+            raise HeaderError(lst_str_keyval)
         for key, value in dict_clip_attr.items():
             setattr(self, key, value)
         if hasattr(self, 'CLONE_ID'):
@@ -147,9 +148,17 @@ def read_fasta_file(fname_fasta):
     CLONE_ID
     '''
     f = open(fname_fasta,'r')
-    lst_seq_record = [ClipRecord(record) for record in SeqIO.parse(f,'fasta')]
+    lst_seq_record = [record for record in SeqIO.parse(f,'fasta')]
+    lst_clip_record = list()
+    for record in lst_seq_record:
+        try:
+            clip_rec = ClipRecord(record)
+            lst_clip_record.append(clip_rec)
+        except HeaderError:
+            print('Sequence with invalid header')
+            continue
     
-    return lst_seq_record
+    return lst_clip_record
 
 def write_tab_file(fname_tab,lst_seq_record):
     '''
