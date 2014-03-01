@@ -207,15 +207,11 @@ def fasta2tab_file(fname, mask=False):
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #parse supplementary attributes
-    #mask d region
-    print('mask')
-    print(mask)
+    #mask d region (maybe)
     if mask:
-        print('masking...')
         for clip_seq in lst_clip_seq:
             clip_seq.d_mask()
     else:
-        print('not masking')
         for clip_seq in lst_clip_seq:
             clip_seq.d_no_mask()
     #append uuid portion to SEQUENCE_ID
@@ -234,7 +230,6 @@ if __name__ == '__main__':
     parser.add_argument('files', metavar='infiles', nargs='+')
     parser.add_argument('-m','--mask', action='store_true')
     argspace = parser.parse_args()
-    print(argspace)
     lst_fasta_files = argspace.files
     bool_mask = argspace.mask
     for fname in lst_fasta_files:
