@@ -49,6 +49,8 @@ class HeaderError(ValueError):
     pass
 class ClipRecord:
     mask_char = 'n'
+    field_sep = '|'
+    colon = ':'
     def __init__(self, seq_record):
         self.seq_record = seq_record
         self.description = self.seq_record.description
@@ -74,12 +76,12 @@ class ClipRecord:
         This method is run by __init__, is private, because it should
         '''
         # splits description by '|' into key-value pair strings
-        lst_str_keyval = [keyval for keyval in self.description.split('|') if
-            len(keyval)>0]
+        lst_str_keyval = [keyval for keyval in
+            self.description.split(self.field_sep) if len(keyval)>0]
         # splits each key value pair string by ':', and creates dictionary
         try:
-            dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
-                if len(keyval)>0])
+            dict_clip_attr = dict([keyval.split(self.colon,1) for keyval in
+                lst_str_keyval if len(keyval)>0])
         except:
             raise HeaderError(lst_str_keyval)
         # keys_list will keep track of what keys are added from the header,
