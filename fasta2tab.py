@@ -50,17 +50,8 @@ class ClipRecord:
         self.description = self.seq_record.description
         self.seq = self.seq_record.seq
         self.SEQUENCE = str(self.seq_record.seq).lower()
-        # splits description by '|' into key-value pair strings
-        lst_str_keyval = [keyval for keyval in self.description.split('|') if
-            len(keyval)>0]
-        # splits each key value pair string by ':', and creates dictionary
-        try:
-            dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
-                if len(keyval)>0])
-        except:
-            raise HeaderError(lst_str_keyval)
-        for key, value in dict_clip_attr.items():
-            setattr(self, key, value)
+        # set fields from FASTA header row
+        self._set_from_header()
         if hasattr(self, 'CLONE_ID'):
             self.CLONE = self.CLONE_ID
         if hasattr(self, 'SEQUENCE'):
@@ -70,6 +61,29 @@ class ClipRecord:
                 self.INDELS = 'F'
         if not hasattr(self, 'INDELS'):
             self.INDELS = 'F'
+        return None
+    def _set_from_header(self):
+        '''
+        This method scrapes input fields from the FASTA sequence description
+        in the format of '[|]key:value[|key:value]', and adds them all as
+        instance attributes.
+        This method is run by __init__, is private, because it should
+        '''
+        # splits description by '|' into key-value pair strings
+        lst_str_keyval = [keyval for keyval in self.description.split('|') if
+            len(keyval)>0]
+        # splits each key value pair string by ':', and creates dictionary
+        try:
+            dict_clip_attr = dict([keyval.split(':',1) for keyval in lst_str_keyval
+                if len(keyval)>0])
+        except:
+            raise HeaderError(lst_str_keyval)
+        # keys_list will keep track of what keys are added from the header,
+        # that way they can later be used to put them all in the TAB file.
+        self.keys_list = set()
+        for key, value in dict_clip_attr.items():
+            setattr(self, key, value)
+            self.keys_list.update(key)
         return None
     def d_mask(self):
         '''
