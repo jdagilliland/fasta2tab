@@ -59,7 +59,10 @@ class ClipRecord:
         # set fields from FASTA header row
         self._set_from_header()
         if hasattr(self, 'CLONE_ID'):
-            self.CLONE = self.CLONE_ID
+            if self.CLONE_ID[:9] == 'Germline:':
+                self.CLONE = self.CLONE_ID[9:]
+            else:
+                self.CLONE = self.CLONE_ID
         if hasattr(self, 'SEQUENCE'):
             self.SEQUENCE_GAP = self.SEQUENCE
         if hasattr(self, 'INDELS'):
@@ -77,8 +80,20 @@ class ClipRecord:
         '''
         # keys_list will keep track of what keys are added from the header,
         # that way they can later be used to put them all in the TAB file.
-        dict_clip_attr = parse_header_delim(
-            self.description, self.field_sep, self.colon)
+        try:
+            dict_clip_attr = parse_header_delim(
+                self.description, self.field_sep, self.colon)
+            # this lets other methods know which style the header was
+            self.header_style = 0
+        except HeaderError:
+            # if parsing using the default scheme fails, try the one backup
+            # scheme that I know might be used
+            dict_clip_attr = parse_header_delim(
+                self.description, '>', '|')
+            # this lets other methods know which style the header was
+            self.header_style = 1
+        except:
+            raise HeaderError
         self.keys_list = set()
         for key, value in dict_clip_attr.items():
             setattr(self, key, value)
@@ -120,9 +135,9 @@ class ClipRecord:
         '''
         self.dict_germ_attr = dict()
         if hasattr(self,'Germline'):
-            self.dict_germ_attr['clone'] = 'Germline:' + getattr(self,'Germline')
+            self.dict_germ_attr['clone'] = getattr(self,'Germline')
         elif hasattr(self,'>Germline'):
-            self.dict_germ_attr['clone'] = 'Germline:' + getattr(self,'>Germline')
+            self.dict_germ_attr['clone'] = getattr(self,'>Germline')
         else:
             raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         if hasattr(self,'SEQUENCE'):
