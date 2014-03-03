@@ -126,7 +126,12 @@ class ClipRecord:
         This method populates the GERMLINE_GAP_D_MASK field with the
         appropriate sequence from the germline entries.
         '''
-        self.GERMLINE_GAP_D_MASK = dict_germline[self.CLONE]
+        try:
+            self.GERMLINE_GAP_D_MASK = dict_germline[self.CLONE]
+        except KeyError:
+            print('Unable to find germline matching clone: {clone}'.format(
+                clone=self.CLONE))
+            raise
         pass
     def prep_germ(self):
         '''
