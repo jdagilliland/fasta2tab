@@ -75,17 +75,10 @@ class ClipRecord:
         instance attributes.
         This method is run by __init__, is private, because it should
         '''
-        # splits description by '|' into key-value pair strings
-        lst_str_keyval = [keyval for keyval in
-            self.description.split(self.field_sep) if len(keyval)>0]
-        # splits each key value pair string by ':', and creates dictionary
-        try:
-            dict_clip_attr = dict([keyval.split(self.colon,1) for keyval in
-                lst_str_keyval if len(keyval)>0])
-        except:
-            raise HeaderError(lst_str_keyval)
         # keys_list will keep track of what keys are added from the header,
         # that way they can later be used to put them all in the TAB file.
+        dict_clip_attr = parse_header_delim(
+            self.description, self.field_sep, self.colon)
         self.keys_list = set()
         for key, value in dict_clip_attr.items():
             setattr(self, key, value)
@@ -271,6 +264,32 @@ def mask_d_region_length(str_seq, v_length, j_length, mask_char='n'):
 #            raise ValueError('''The sequence has changed in length.
 #                You must mask a different way.''')
     return ''.join(lst_seq)
+
+def parse_header_delim(str_line, field_sep='|', colon=':'):
+    '''
+    This function parses the header line of a FASTA file, scraping up its
+    key-value pairs and returning them as a dictionary.
+    It accepts 1 positional, and 2 optional args:
+    str_line is the string form of the header line.
+    field_sep is the separator in between key-value pairs (defaults to '|').
+    colon is the separator between keys and values
+    (defaults to ':', obviously).
+    
+    It expects header lines to be in the form of '[|]key:value[|key:value]'.
+    '''
+    # splits description by 'field_sep' into key-value pair strings
+    # only noticing key-value strings longer than 0 characters
+    lst_str_keyval = [keyval for keyval in
+        str_line.split(field_sep) if len(keyval)>0]
+    # splits each key value pair string by 'colon', and creates dictionary
+    # NOTE: only split by the *first* 'colon' so that additional 'colon' can
+    # appear in the value
+    try:
+        dict_header_field = dict([keyval.split(colon,1) for keyval in
+            lst_str_keyval if len(keyval)>0])
+    except:
+        raise HeaderError(lst_str_keyval)
+    return dict_header_field
 
 def fasta2tab_file(fname, mask=None, germ=True):
     '''
