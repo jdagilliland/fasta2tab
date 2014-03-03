@@ -100,22 +100,9 @@ class ClipRecord:
         #if not has_attr(self,...)
         v_length = int(self.V_LENGTH)
         j_length = int(self.J_LENGTH)
-        length = len(self.SEQUENCE)
-        d_length = length - v_length - j_length
-        lst_seq = list(self.SEQUENCE)
-        lst_seq[v_length:v_length+d_length] = d_length * self.mask_char
         
-        if len(lst_seq) != length:
-            print('Length prior to masking')
-            print(length)
-            print('Length after masking')
-            print(len(lst_seq))
-            print(v_length)
-            print(j_length)
-            print(d_length)
-#            raise ValueError('''The sequence has changed in length.
-#                You must mask a different way.''')
-        self.GERMLINE_GAP_D_MASK = ''.join(lst_seq)
+        self.GERMLINE_GAP_D_MASK = mask_d_region_length(
+            self.SEQUENCE, v_length, j_length, mask_char=self.mask_char)
         pass
     def d_no_mask(self):
         '''
@@ -260,6 +247,28 @@ def get_uuid():
     This function returns a single UUID using module variables charset,n_char.
     '''
     return ''.join(random.choice(charset) for iI in xrange(n_char))
+
+def mask_d_region_length(str_seq, v_length, j_length, mask_char='n'):
+    '''
+    This function masks the D region of a given sequence, V length, and J
+    length.
+    The optional argument 'mask_char' defaults to 'n'.
+    '''
+    length = len(str_seq)
+    d_length = length - v_length - j_length
+    lst_seq = list(str_seq)
+    lst_seq[v_length:v_length + d_length] = d_length * mask_char
+    if len(lst_seq) != length:
+        print('Length prior to masking')
+        print(length)
+        print('Length after masking')
+        print(len(lst_seq))
+        print(v_length)
+        print(j_length)
+        print(d_length)
+#            raise ValueError('''The sequence has changed in length.
+#                You must mask a different way.''')
+    return ''.join(lst_seq)
 
 def fasta2tab_file(fname, mask=None, germ=True):
     '''
