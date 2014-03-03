@@ -124,6 +124,13 @@ class ClipRecord:
         '''
         self.GERMLINE_GAP_D_MASK = self.SEQUENCE
         pass
+    def germline_d_no_mask(self, dict_germline):
+        '''
+        This method populates the GERMLINE_GAP_D_MASK field with the
+        appropriate sequence from the germline entries.
+        '''
+        self.GERMLINE_GAP_D_MASK = dict_germline[self.CLONE]
+        pass
     def prep_germ(self):
         '''
         This method prepares a ClipRecord instance for entry into a germline
@@ -131,9 +138,9 @@ class ClipRecord:
         '''
         self.dict_germ_attr = dict()
         if hasattr(self,'Germline'):
-            self.dict_germ_attr['clone'] = getattr(self,'Germline')
+            self.dict_germ_attr['clone'] = 'Germline:' + getattr(self,'Germline')
         elif hasattr(self,'>Germline'):
-            self.dict_germ_attr['clone'] = getattr(self,'>Germline')
+            self.dict_germ_attr['clone'] = 'Germline:' + getattr(self,'>Germline')
         else:
             raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         if hasattr(self,'SEQUENCE'):
@@ -254,7 +261,7 @@ def get_uuid():
     '''
     return ''.join(random.choice(charset) for iI in xrange(n_char))
 
-def fasta2tab_file(fname, mask=False, germ=True):
+def fasta2tab_file(fname, mask=None, germ=True):
     '''
     This function will process a single clip fasta file into a single tab file
     appropriately named.
@@ -263,11 +270,23 @@ def fasta2tab_file(fname, mask=False, germ=True):
     lst_seq_record = read_fasta_file(fname)
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
+    #prep germline sequences
+    dict_germline = dict()
+    for germline in lst_germline:
+        germline.prep_germ()
+        dict_germline[germline.dict_germ_attr['clone']
+            ] = germline.dict_germ_attr['seq']
     #parse supplementary attributes
     #mask d region (maybe)
-    if mask:
+    if mask=='same_null':
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_no_mask()
+    elif mask=='same_mask':
         for clip_seq in lst_clip_seq:
             clip_seq.d_mask()
+    elif mask=='germ_null':
+        for clip_seq in lst_clip_seq:
+            clip_seq.germline_d_no_mask(dict_germline)
     else:
         for clip_seq in lst_clip_seq:
             clip_seq.d_no_mask()
@@ -275,15 +294,11 @@ def fasta2tab_file(fname, mask=False, germ=True):
     append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
     tabfname = tabname(fname)
-    
     #write the final list of SeqRecord to the tab file
     write_tab_file(tabfname, lst_clip_seq)
     
     if germ:
         ## Only if preparing a germline tab
-        #prep germline sequences
-        for germline in lst_germline:
-            germline.prep_germ()
         #find an appropriate name for the germline tab file
         germtabfname = germtabname(fname)
         write_germ_tab_file(germtabfname, lst_germline)
@@ -296,11 +311,12 @@ if __name__ == '__main__':
         description='Convert FASTA files to TAB files'
         )
     parser.add_argument('files', metavar='infiles', nargs='+')
-    parser.add_argument('-m', '--mask', action='store_true')
+    parser.add_argument('-m', '--mask',
+        choices=['same_null','same_mask','germ_null','germ_mask'])
     parser.add_argument('-g', '--germ', action='store_true')
     argspace = parser.parse_args()
     lst_fasta_files = argspace.files
-    bool_mask = argspace.mask
+    mask_mode = argspace.mask
     for fname in lst_fasta_files:
-        fasta2tab_file(fname, mask=bool_mask)
+        fasta2tab_file(fname, mask=mask_mode)
 
