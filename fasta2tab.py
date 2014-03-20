@@ -2,6 +2,7 @@
 import random
 import string
 import csv
+import warnings
 
 from Bio import SeqIO
 
@@ -76,7 +77,8 @@ class ClipRecord:
         This method scrapes input fields from the FASTA sequence description
         in the format of '[|]key:value[|key:value]', and adds them all as
         instance attributes.
-        This method is run by __init__, is private, because it should
+        This method is run by __init__, is private, because it should never
+        need to be run from outside the module.
         '''
         # keys_list will keep track of what keys are added from the header,
         # that way they can later be used to put them all in the TAB file.
@@ -143,8 +145,13 @@ class ClipRecord:
             self.dict_germ_attr['clone'] = getattr(self,'Germline')
         elif hasattr(self,'>Germline'):
             self.dict_germ_attr['clone'] = getattr(self,'>Germline')
+        elif hasattr(self,'>GERMLINE'):
+            self.dict_germ_attr['clone'] = getattr(self,'>GERMLINE')
         else:
-            raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
+            print(self.description)
+            warnings.warn(
+                '''The above header had no suitable 'Germline' field.''')
+#            raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         if hasattr(self,'SEQUENCE'):
             self.dict_germ_attr['seq'] = getattr(self,'SEQUENCE')
         else:
@@ -168,9 +175,10 @@ def append_uuid(lst_seq_record):
     lst_uuid = get_n_uuid(n_id)
     for iI, record in enumerate(lst_seq_record):
         try:
-            record.SEQUENCE_ID += lst_uuid[iI]
+            record.SEQUENCE_ID = getattr(record,'SEQUENCE_ID','') + lst_uuid[iI]
         except:
-            print(record)
+            print(record.description)
+            print(dir(record))
             raise
     
 def tabname(fastaname):
@@ -329,7 +337,7 @@ def fasta2tab_file(fname, mask=None, germ=True):
     dict_germline = dict()
     for germline in lst_germline:
         germline.prep_germ()
-        dict_germline[germline.dict_germ_attr['clone']
+        dict_germline[germline.dict_germ_attr.get('clone','anonymous')
             ] = germline.dict_germ_attr['seq']
     #parse supplementary attributes
     #mask d region (maybe)
