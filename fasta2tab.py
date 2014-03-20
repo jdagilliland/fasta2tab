@@ -305,8 +305,13 @@ def parse_header_delim(str_line, field_sep='|', colon=':'):
     # NOTE: only split by the *first* 'colon' so that additional 'colon' can
     # appear in the value
     try:
-        dict_header_field = dict([keyval.split(colon,1) for keyval in
-            lst_str_keyval if len(keyval)>0])
+        lst_tpl_keyval = [keyval.split(colon,1) for keyval in
+            lst_str_keyval if len(keyval)>0]
+        if len(lst_tpl_keyval) == 1 and len(lst_tpl_keyval[0]) == 1:
+            # this means we are dealing with a thin header
+            dict_header_field = {'SEQUENCE_ID':lst_tpl_keyval[0][0]}
+        else:
+            dict_header_field = dict(lst_tpl_keyval)
     except:
         raise HeaderError(lst_str_keyval)
     return dict_header_field
