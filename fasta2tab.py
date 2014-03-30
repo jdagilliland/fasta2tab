@@ -340,19 +340,7 @@ def fasta2tab_file(fname, mask=None, germ=True):
         dict_germline[germline.dict_germ_attr.get('clone','anonymous')
             ] = germline.dict_germ_attr['seq']
     #parse supplementary attributes
-    #mask d region (maybe)
-    if mask=='same_null':
-        for clip_seq in lst_clip_seq:
-            clip_seq.d_no_mask()
-    elif mask=='same_mask':
-        for clip_seq in lst_clip_seq:
-            clip_seq.d_mask()
-    elif mask=='germ_null':
-        for clip_seq in lst_clip_seq:
-            clip_seq.germline_d_no_mask(dict_germline)
-    else:
-        for clip_seq in lst_clip_seq:
-            clip_seq.d_no_mask()
+    mask_by_option(lst_clip_seq, dict_germline=dict_germline, mask=mask)
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
     #find an appropriate name for the tab file
@@ -367,6 +355,36 @@ def fasta2tab_file(fname, mask=None, germ=True):
         write_germ_tab_file(germtabfname, lst_germline)
     
     return None
+
+def mask_by_option(lst_clip_seq, dict_germline=None, mask=None):
+    """
+    Mask sequences to fill 'GERMLINE_GAP_D_MASK' field.
+
+    Parameters
+    ----------
+
+    lst_clip_seq : list
+        List of `ClipRecord` instances to mask by option
+
+    Returns
+    -------
+    lst_clip_seq : list
+        List of `ClipRecord` instances that have been masked.
+    """
+    #mask d region (maybe)
+    if mask=='same_null':
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_no_mask()
+    elif mask=='same_mask':
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_mask()
+    elif mask=='germ_null':
+        for clip_seq in lst_clip_seq:
+            clip_seq.germline_d_no_mask(dict_germline)
+    else:
+        for clip_seq in lst_clip_seq:
+            clip_seq.d_no_mask()
+    return lst_clip_seq
 
 if __name__ == '__main__':
     import argparse
