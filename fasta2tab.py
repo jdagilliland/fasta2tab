@@ -331,6 +331,32 @@ def fasta2tab_file(fname, mask=None, germ=True):
     '''
     #generate an initial list of SeqRecord
     lst_seq_record = read_fasta_file(fname)
+    #process lst_seq_record
+    seqrecords2tab(lst_seq_record, mask=mask, germ=germ)
+    return None
+
+def seqrecords2tab(lst_seq_record, **kwarg):
+    """
+    Process a list of `ClipRecord` instances into a tabfile.
+
+    Parameters
+    ----------
+
+    lst_seq_record : list
+        A list of `ClipRecord` instances, including germlines and
+        non-germlines which will be processed.
+    mask : str
+        A string specifying what masking protocol to use (default: None).
+    germ : bool
+        Whether or not to prepare a germline tab file.
+
+    Returns
+    -------
+    None
+    """
+    #parse kwarg
+    mask = kwarg.pop('mask', None)
+    germ = kwarg.pop('germ', True)
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #prep germline sequences
