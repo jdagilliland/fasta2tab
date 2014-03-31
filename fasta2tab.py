@@ -45,6 +45,7 @@ tpl_cols = (
     'DUPCOUNT',
     'CLONE',
     'GERMLINE_GAP_D_MASK',
+    'FASTA',
     )
 class HeaderError(ValueError):
     pass
@@ -216,6 +217,8 @@ def read_fasta_file(fname_fasta):
         except HeaderError:
             print('Sequence with invalid header')
             continue
+    for record in lst_clip_record:
+        setattr(record, 'FASTA', fname_fasta)
     
     return lst_clip_record
 
