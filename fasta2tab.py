@@ -324,6 +324,17 @@ def parse_header_delim(str_line, field_sep='|', colon=':'):
         raise HeaderError(lst_str_keyval)
     return dict_header_field
 
+def fasta2tab_comb(lst_fname, tabfname='tabfile.tab', mask=None, germ=True):
+    """
+    Combine multiple clip fasta files `lst_fname` into a single tab file.
+    """
+    lst_seq_record = list()
+    for fname in lst_fname:
+        lst_seq_record.extend(read_fasta_file(fname))
+    #process lst_seq_record
+    seqrecords2tab(lst_seq_record, mask=mask, germ=germ, tabfname=tabfname)
+    return None
+
 def fasta2tab_file(fname, mask=None, germ=True):
     '''
     This function will process a single clip fasta file into a single tab file
@@ -331,8 +342,10 @@ def fasta2tab_file(fname, mask=None, germ=True):
     '''
     #generate an initial list of SeqRecord
     lst_seq_record = read_fasta_file(fname)
+    #find an appropriate name for the tab file
+    tabfname = tabname(fname)
     #process lst_seq_record
-    seqrecords2tab(lst_seq_record, mask=mask, germ=germ)
+    seqrecords2tab(lst_seq_record, mask=mask, germ=germ, tabfname=tabfname)
     return None
 
 def seqrecords2tab(lst_seq_record, **kwarg):
@@ -357,6 +370,7 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     #parse kwarg
     mask = kwarg.pop('mask', None)
     germ = kwarg.pop('germ', True)
+    tabfname = kwarg.pop('tabfname', True)
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #prep germline sequences
@@ -369,8 +383,6 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     mask_by_option(lst_clip_seq, dict_germline=dict_germline, mask=mask)
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
-    #find an appropriate name for the tab file
-    tabfname = tabname(fname)
     #write the final list of SeqRecord to the tab file
     write_tab_file(tabfname, lst_clip_seq)
     
@@ -408,6 +420,7 @@ def mask_by_option(lst_clip_seq, dict_germline=None, mask=None):
         for clip_seq in lst_clip_seq:
             clip_seq.germline_d_no_mask(dict_germline)
     else:
+        # same as if mask=='same_null'
         for clip_seq in lst_clip_seq:
             clip_seq.d_no_mask()
     return lst_clip_seq
@@ -419,11 +432,32 @@ if __name__ == '__main__':
         )
     parser.add_argument('files', metavar='infiles', nargs='+')
     parser.add_argument('-m', '--mask',
-        choices=['same_null','same_mask','germ_null','germ_mask'])
-    parser.add_argument('-g', '--germ', action='store_true')
+        choices=['same_null','same_mask','germ_null','germ_mask'],
+        default='same_null',
+        )
+    parser.add_argument('-g', '--germ',
+        dest='germ',
+        action='store_true',
+        )
+    parser.add_argument('-c', '--combine',
+        dest='tabfname',
+        nargs='?', const='tabfile.tab', default=None,
+        )
     argspace = parser.parse_args()
-    lst_fasta_files = argspace.files
     mask_mode = argspace.mask
-    for fname in lst_fasta_files:
-        fasta2tab_file(fname, mask=mask_mode)
-
+    if argspace.tabfname == None:
+        # No output tabfile name was specified, therefore treat each input
+        # fasta file individually.
+        for fname in argspace.files:
+            fasta2tab_file(
+                fname,
+                mask=argspace.mask,
+                germ=argspace.germ,
+                )
+    else:
+        fasta2tab_comb(
+            argspace.files,
+            tabfname=argspace.tabfname,
+            mask=argspace.mask,
+            germ=argspace.germ,
+            )
