@@ -3,6 +3,7 @@ import random
 import string
 import csv
 import warnings
+import os
 
 from Bio import SeqIO
 
@@ -218,7 +219,7 @@ def read_fasta_file(fname_fasta):
             print('Sequence with invalid header')
             continue
     for record in lst_clip_record:
-        setattr(record, 'FASTA', fname_fasta)
+        setattr(record, 'FASTA', os.path.basename(fname_fasta))
     
     return lst_clip_record
 
