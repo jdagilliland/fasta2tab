@@ -393,7 +393,7 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     if germ:
         ## Only if preparing a germline tab
         #find an appropriate name for the germline tab file
-        germtabfname = germtabname(fname)
+        germtabfname = germtabname(tabfname)
         write_germ_tab_file(germtabfname, lst_germline)
     
     return None
