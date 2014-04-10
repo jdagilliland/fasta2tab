@@ -246,9 +246,20 @@ def _get_fields(lst_seq_record):
 
 def write_tab_file(fname_tab,lst_seq_record):
     '''
-    This function will take a list of Bio.SeqRecord instances, extract the
-    needed sequence and metadata from each, and write them to an appropriately
-    formatted tab file.
+    Write a list of `Bio.SeqRecord` instances to a tabfile.
+
+    Parameters
+    ----------
+    fname_tab : str
+        A filename to which to write the tabfile.
+    lst_seq_record : list
+        A list of `Bio.SeqRecord` instances.
+
+    Notes
+    -----
+    The fields that will be written to the tabfile are determined by the
+    fields listed in `tpl_cols`, as well as those present in the
+    `Bio.SeqRecord` instances that have all uppercase.
     '''
     tpl_fields = _get_fields(lst_seq_record)
     with open(fname_tab,'w') as f:
@@ -381,7 +392,6 @@ def seqrecords2tab(lst_seq_record, **kwarg):
 
     Parameters
     ----------
-
     lst_seq_record : list
         A list of `ClipRecord` instances, including germlines and
         non-germlines which will be processed.
