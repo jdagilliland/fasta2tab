@@ -223,14 +223,37 @@ def read_fasta_file(fname_fasta):
     
     return lst_clip_record
 
+def _get_fields(lst_seq_record):
+    """
+    Get the fields that should always be included, plus the uppercase ones
+    from a list of `Bio.SeqRecord` instances.
+
+    Parameters
+    ----------
+    lst_seq_record : list
+        A list of `Bio.SeqRecord` instances.
+
+    Returns
+    -------
+    tpl_fields : tuple
+        A tuple of the fields.
+    """
+    tpl_fields = list(tpl_cols)
+    for seq_record in lst_seq_record:
+        tpl_fields.extend([field for field in seq_record.__dict__
+            if (field.isupper() and field not in tpl_fields)])
+    return tpl_fields
+
 def write_tab_file(fname_tab,lst_seq_record):
     '''
     This function will take a list of Bio.SeqRecord instances, extract the
     needed sequence and metadata from each, and write them to an appropriately
     formatted tab file.
     '''
+    tpl_fields = _get_fields(lst_seq_record)
     with open(fname_tab,'w') as f:
-        tab_writer = csv.DictWriter(f, tpl_cols, extrasaction='ignore', delimiter='\t')
+        tab_writer = csv.DictWriter(f, tpl_fields, extrasaction='ignore',
+            delimiter='\t')
         # write header
         tab_writer.writeheader()
         for seq_record in lst_seq_record:
