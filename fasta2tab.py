@@ -462,7 +462,7 @@ def mask_by_option(lst_clip_seq, dict_germline=None, mask=None):
             clip_seq.d_no_mask()
     return lst_clip_seq
 
-if __name__ == '__main__':
+def _main():
     import argparse
     parser = argparse.ArgumentParser(
         description='Convert FASTA files to TAB files'
@@ -498,3 +498,6 @@ if __name__ == '__main__':
             mask=argspace.mask,
             germ=argspace.germ,
             )
+
+if __name__ == '__main__':
+    _main()
