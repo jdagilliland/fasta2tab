@@ -231,7 +231,7 @@ def _get_fields(lst_seq_record):
     """
     tpl_fields = list(tpl_cols)
     for seq_record in lst_seq_record:
-        tpl_fields.extend([field for field in seq_record.__dict__
+        tpl_fields.extend([field for field in vars(seq_record)
             if (field.isupper() and field not in tpl_fields)])
     return tpl_fields
 
@@ -259,7 +259,7 @@ def write_tab_file(fname_tab,lst_seq_record):
         # write header
         tab_writer.writeheader()
         for seq_record in lst_seq_record:
-            tab_writer.writerow(seq_record.__dict__)
+            tab_writer.writerow(vars(seq_record))
             pass
 
 def write_germ_tab_file(fname_tab,lst_seq_record):
@@ -274,7 +274,7 @@ def write_germ_tab_file(fname_tab,lst_seq_record):
         # write header
         tab_writer.writeheader()
         for seq_record in lst_seq_record:
-            tab_writer.writerow(seq_record.__dict__)
+            tab_writer.writerow(vars(seq_record))
             pass
 
 def get_n_uuid(n):
