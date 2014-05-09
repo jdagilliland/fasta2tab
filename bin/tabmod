@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+import fasta2tab
+fasta2tab._tabmod()
+

@@ -46,7 +46,7 @@ tpl_cols = (
     )
 class HeaderError(ValueError):
     pass
-class ClipRecord:
+class ClipRecord(object):
     mask_char = 'n'
     field_sep = '|'
     colon = ':'
@@ -150,6 +150,20 @@ class ClipRecord:
                 '''The above header had no suitable 'Germline' field.''')
 #            raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         pass
+    @classmethod
+    def from_tabfile(cls, tabfname):
+        '''
+        Creates a list of ClipRecord instances from a pre-existing TAB file.
+        '''
+        with open(tabfname,'rb') as tabf:
+            reader = csv.DictReader(tabf, delimiter='\t')
+            lst_cliprec = list()
+            for entrydict in reader:
+                cliprec = cls.__new__(cls)
+                for key, val  in entrydict.items():
+                    setattr(cliprec, key, val)
+                lst_cliprec.append(cliprec)
+        return lst_cliprec
     pass
 def prune_germline_records(lst_seq_record):
     lst_germline = [record for record in lst_seq_record if
@@ -158,14 +172,19 @@ def prune_germline_records(lst_seq_record):
         record.description[0] !='>']
     return lst_germline, lst_non_germline
 
-def append_uuid(lst_seq_record):
+def append_uuid(lst_seq_record, **kwarg):
     '''
-    This function accepts a list of Bio.SeqRecord, computes a unique
-    identifier for each, and appends it to the 'SEQUENCE_ID' string of each
+    Accepts a list of Bio.SeqRecord, compute a unique
+    identifier for each, and append it to the 'SEQUENCE_ID' string of each
     SeqRecord.
+
+    Parameters
+    ----------
+    length : int
+        The length of UUID to append, default `n_char`.
     '''
     n_id = len(lst_seq_record)
-    lst_uuid = get_n_uuid(n_id)
+    lst_uuid = get_n_uuid(n_id, **kwarg)
     for iI, record in enumerate(lst_seq_record):
         try:
             record.SEQUENCE_ID = getattr(record,'SEQUENCE_ID','') + lst_uuid[iI]
@@ -235,6 +254,17 @@ def _get_fields(lst_seq_record):
             if (field.isupper() and field not in tpl_fields)])
     return tpl_fields
 
+def add_uuid_tabfile(tabfname, **kwarg):
+    '''
+    Append a UUID to each entry in a tabfile.
+    '''
+    lst_cliprec = ClipRecord.from_tabfile(tabfname)
+    print(len(lst_cliprec))
+    append_uuid(lst_cliprec)
+    print(len(lst_cliprec))
+    write_tab_file(tabfname, lst_cliprec)
+    return None
+
 def write_tab_file(fname_tab,lst_seq_record):
     '''
     Write a list of `Bio.SeqRecord` instances to a tabfile.
@@ -277,13 +307,20 @@ def write_germ_tab_file(fname_tab,lst_seq_record):
             tab_writer.writerow(vars(seq_record))
             pass
 
-def get_n_uuid(n):
+def get_n_uuid(n, **kwarg):
     '''
     This function will generate as many UUID as requested, confirming that
     they are unique.
+
+    Parameters
+    ----------
+    length : int
+        The length of UUID to append, default `n_char`.
     '''
+    def gen_uuid():
+        return get_uuid(**kwarg)
     # generates list of UUID prior to checking for duplicates
-    lst_uuid = [get_uuid() for iI in xrange(n)]
+    lst_uuid = [gen_uuid() for iI in xrange(n)]
     # WARNING: while loop, remove in future versions
     # check to see that all UUID in lst_uuid are unique
     while True:
@@ -291,14 +328,20 @@ def get_n_uuid(n):
         n_unique = len(lst_uuid)
         if n_unique == n:
             break
-        lst_uuid.update([get_uuid() for iI in xrange(n-n_unique)])
+        lst_uuid.update([gen_uuid() for iI in xrange(n-n_unique)])
     return list(lst_uuid)
 
-def get_uuid():
+def get_uuid(**kwarg):
     '''
     This function returns a single UUID using module variables charset,n_char.
+
+    Parameters
+    ----------
+    length : int
+        The length of UUID to append, default `n_char`.
     '''
-    return ''.join(random.choice(charset) for iI in xrange(n_char))
+    length = kwarg.pop('length', n_char)
+    return ''.join(random.choice(charset) for iI in xrange(length))
 
 def mask_d_region_length(str_seq, v_length, j_length, mask_char='n'):
     '''
@@ -489,6 +532,41 @@ def _main():
             mask=argspace.mask,
             germ=argspace.germ,
             )
+
+def _tabmod():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Modify TAB files in various ways'
+        )
+    subparsers = parser.add_subparsers(help="""
+            Choose from available subcommands
+            """,
+            dest='action',
+            )
+    parser_uuid = subparsers.add_parser('u', help="""
+            Add UUIDs to SEQUENCE_ID field of TAB file(s).
+            """,
+            )
+    parser_uuid.add_argument('-l', '--length',
+            default=n_char,
+            dest='length',
+            help="""The number of characters for each UUID to have
+            (default {num}).
+            The character set from which the UUID is chosen is: '{chars}'.
+            """.format(num=n_char,chars=charset),
+            )
+    parser_uuid.add_argument('lst_file', metavar='FILES',
+            nargs='+',
+            help="""The TAB file(s) to which to append UUIDs.
+            """
+            )
+#    parser_uuid.set_defaults(func=add_uuid_tabfile)
+    argspace = parser.parse_args()
+    if argspace.action == 'u':
+        length = getattr(argspace, 'length', n_char)
+        for tabfile in argspace.lst_file:
+            add_uuid_tabfile(tabfile, length=length)
+    return None
 
 if __name__ == '__main__':
     _main()

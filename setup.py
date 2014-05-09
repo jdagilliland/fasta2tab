@@ -6,7 +6,7 @@ setup(
         author='J. D. A. Gilliland',
         author_email='jdagilliland@gmail.com',
         py_modules=['fasta2tab'],
-        scripts=['bin/fasta2tab'],
+        scripts=['bin/fasta2tab','bin/tabmod'],
         install_requires=[
             'BioPython >= 1.63',
             ],
