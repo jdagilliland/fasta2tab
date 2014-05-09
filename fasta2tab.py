@@ -11,10 +11,6 @@ from Bio import SeqIO
 charset = string.letters + string.digits
 # the number of characters to use for sequence UUIDs
 n_char = 8
-tpl_germ_cols = (
-    'clone',
-    'seq',
-    )
 # these are the columns to output in the tab file
 tpl_cols = (
     'SEQUENCE_ID',
@@ -142,22 +138,17 @@ class ClipRecord:
         This method prepares a ClipRecord instance for entry into a germline
         TAB file.
         '''
-        self.dict_germ_attr = dict()
         if hasattr(self,'Germline'):
-            self.dict_germ_attr['clone'] = getattr(self,'Germline')
+            self.SEQUENCE_ID = getattr(self,'Germline')
         elif hasattr(self,'>Germline'):
-            self.dict_germ_attr['clone'] = getattr(self,'>Germline')
+            self.SEQUENCE_ID = getattr(self,'>Germline')
         elif hasattr(self,'>GERMLINE'):
-            self.dict_germ_attr['clone'] = getattr(self,'>GERMLINE')
+            self.SEQUENCE_ID = getattr(self,'>GERMLINE')
         else:
             print(self.description)
             warnings.warn(
                 '''The above header had no suitable 'Germline' field.''')
 #            raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
-        if hasattr(self,'SEQUENCE'):
-            self.dict_germ_attr['seq'] = getattr(self,'SEQUENCE')
-        else:
-            raise HeaderError('''ClipRecord object has no suitable sequence.''')
         pass
     pass
 def prune_germline_records(lst_seq_record):
@@ -278,12 +269,12 @@ def write_germ_tab_file(fname_tab,lst_seq_record):
     from each, and write them to an appropriately formatted tab file.
     '''
     with open(fname_tab,'w') as f:
-        tab_writer = csv.DictWriter(f, tpl_germ_cols, extrasaction='ignore',
+        tab_writer = csv.DictWriter(f, tpl_cols, extrasaction='ignore',
             delimiter='\t')
         # write header
         tab_writer.writeheader()
         for seq_record in lst_seq_record:
-            tab_writer.writerow(seq_record.dict_germ_attr)
+            tab_writer.writerow(seq_record.__dict__)
             pass
 
 def get_n_uuid(n):
@@ -414,8 +405,8 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     dict_germline = dict()
     for germline in lst_germline:
         germline.prep_germ()
-        dict_germline[germline.dict_germ_attr.get('clone','anonymous')
-            ] = germline.dict_germ_attr['seq']
+        dict_germline[getattr(germline,'SEQUENCE_ID','anonymous')
+            ] = getattr(germline, 'SEQUENCE')
     #parse supplementary attributes
     mask_by_option(lst_clip_seq, dict_germline=dict_germline, mask=mask)
     #append uuid portion to SEQUENCE_ID
