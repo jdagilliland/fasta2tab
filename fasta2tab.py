@@ -402,7 +402,8 @@ def parse_header_delim(str_line, field_sep='|', colon=':'):
         raise HeaderError(lst_str_keyval)
     return dict_header_field
 
-def fasta2tab_comb(lst_fname, tabfname='tabfile.tab', mask=None, germ=True):
+def fasta2tab_comb(lst_fname, tabfname='tabfile.tab', mask=None,
+        germ=True, **kwarg):
     """
     Combine multiple clip fasta files `lst_fname` into a single tab file.
     """
@@ -410,10 +411,11 @@ def fasta2tab_comb(lst_fname, tabfname='tabfile.tab', mask=None, germ=True):
     for fname in lst_fname:
         lst_seq_record.extend(read_fasta_file(fname))
     #process lst_seq_record
-    seqrecords2tab(lst_seq_record, mask=mask, germ=germ, tabfname=tabfname)
+    seqrecords2tab(lst_seq_record, mask=mask, germ=germ,
+            tabfname=tabfname, **kwarg)
     return None
 
-def fasta2tab_file(fname, mask=None, germ=True):
+def fasta2tab_file(fname, mask=None, germ=True, **kwarg):
     '''
     This function will process a single clip fasta file into a single tab file
     appropriately named.
@@ -423,7 +425,8 @@ def fasta2tab_file(fname, mask=None, germ=True):
     #find an appropriate name for the tab file
     tabfname = tabname(fname)
     #process lst_seq_record
-    seqrecords2tab(lst_seq_record, mask=mask, germ=germ, tabfname=tabfname)
+    seqrecords2tab(lst_seq_record, mask=mask, germ=germ,
+            tabfname=tabfname, **kwarg)
     return None
 
 def seqrecords2tab(lst_seq_record, **kwarg):
@@ -436,9 +439,12 @@ def seqrecords2tab(lst_seq_record, **kwarg):
         A list of `ClipRecord` instances, including germlines and
         non-germlines which will be processed.
     mask : str
-        A string specifying what masking protocol to use (default: None).
+        A string specifying what masking protocol to use. (default: None)
     germ : bool
-        Whether or not to prepare a germline tab file.
+        Whether or not to prepare a germline tab file. (default: True)
+    integrate : bool
+        Whether or not to integrate the germline sequences into the
+        master tab file. (default: True)
 
     Returns
     -------
@@ -448,6 +454,7 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     mask = kwarg.pop('mask', None)
     germ = kwarg.pop('germ', True)
     tabfname = kwarg.pop('tabfname', True)
+    integrate = kwarg.pop('integrate', True)
     #prune out entries that list germlines
     lst_germline, lst_clip_seq = prune_germline_records(lst_seq_record)
     #prep germline sequences
@@ -460,6 +467,10 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     mask_by_option(lst_clip_seq, dict_germline=dict_germline, mask=mask)
     #append uuid portion to SEQUENCE_ID
     append_uuid(lst_clip_seq)
+    if integrate:
+        # If told to integrate germline sequences, prepend those to the
+        # list of clip seq.
+        lst_clip_seq = lst_germline + lst_clip_seq
     #write the final list of SeqRecord to the tab file
     write_tab_file(tabfname, lst_clip_seq)
 
@@ -520,6 +531,10 @@ def _main():
         dest='tabfname',
         nargs='?', const='tabfile.tab', default=None,
         )
+    parser.add_argument('-i', '--integrate',
+            dest='integrate',
+            action='store_true',
+            )
     argspace = parser.parse_args()
     mask_mode = argspace.mask
     if argspace.tabfname == None:
@@ -530,6 +545,7 @@ def _main():
                 fname,
                 mask=argspace.mask,
                 germ=argspace.germ,
+                integrate=argspace.integrate,
                 )
     else:
         fasta2tab_comb(
@@ -537,6 +553,7 @@ def _main():
             tabfname=argspace.tabfname,
             mask=argspace.mask,
             germ=argspace.germ,
+            integrate=argspace.integrate,
             )
 
 def _tabmod():
