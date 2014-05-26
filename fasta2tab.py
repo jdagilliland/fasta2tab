@@ -50,6 +50,7 @@ class ClipRecord(object):
     mask_char = 'n'
     field_sep = '|'
     colon = ':'
+
     def __init__(self, seq_record):
         self.seq_record = seq_record
         self.description = self.seq_record.description
@@ -70,6 +71,7 @@ class ClipRecord(object):
         if not hasattr(self, 'INDELS'):
             self.INDELS = 'F'
         return None
+
     def _set_from_header(self):
         '''
         This method scrapes input fields from the FASTA sequence description
@@ -99,6 +101,7 @@ class ClipRecord(object):
             setattr(self, key, value)
             self.keys_list.update(key)
         return None
+
     def d_mask(self):
         '''
         This method takes the sequence data, uses the fields indicating
@@ -110,10 +113,10 @@ class ClipRecord(object):
         #if not has_attr(self,...)
         v_length = int(self.V_LENGTH)
         j_length = int(self.J_LENGTH)
-        
         self.GERMLINE_GAP_D_MASK = mask_d_region_length(
             self.SEQUENCE, v_length, j_length, mask_char=self.mask_char)
         pass
+
     def d_no_mask(self):
         '''
         This method takes the sequence data and copies it into
@@ -133,6 +136,7 @@ class ClipRecord(object):
                 clone=self.CLONE))
             raise
         pass
+
     def prep_germ(self):
         '''
         This method prepares a ClipRecord instance for entry into a germline
@@ -148,8 +152,9 @@ class ClipRecord(object):
             print(self.description)
             warnings.warn(
                 '''The above header had no suitable 'Germline' field.''')
-#            raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
+            # raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         pass
+
     @classmethod
     def from_tabfile(cls, tabfname):
         '''
@@ -165,6 +170,7 @@ class ClipRecord(object):
                 lst_cliprec.append(cliprec)
         return lst_cliprec
     pass
+
 def prune_germline_records(lst_seq_record):
     lst_germline = [record for record in lst_seq_record if
         record.description[0] =='>']
@@ -192,7 +198,7 @@ def append_uuid(lst_seq_record, **kwarg):
             print(record.description)
             print(dir(record))
             raise
-    
+
 def tabname(fastaname):
     '''
     This function generates a suitable name for the tab file based on the name
@@ -230,7 +236,7 @@ def read_fasta_file(fname_fasta):
             continue
     for record in lst_clip_record:
         setattr(record, 'FASTA', os.path.basename(fname_fasta))
-    
+
     return lst_clip_record
 
 def _get_fields(lst_seq_record):
@@ -361,8 +367,8 @@ def mask_d_region_length(str_seq, v_length, j_length, mask_char='n'):
         print(v_length)
         print(j_length)
         print(d_length)
-#            raise ValueError('''The sequence has changed in length.
-#                You must mask a different way.''')
+            # raise ValueError('''The sequence has changed in length.
+            #     You must mask a different way.''')
     return ''.join(lst_seq)
 
 def parse_header_delim(str_line, field_sep='|', colon=':'):
@@ -374,7 +380,7 @@ def parse_header_delim(str_line, field_sep='|', colon=':'):
     field_sep is the separator in between key-value pairs (defaults to '|').
     colon is the separator between keys and values
     (defaults to ':', obviously).
-    
+
     It expects header lines to be in the form of '[|]key:value[|key:value]'.
     '''
     # splits description by 'field_sep' into key-value pair strings
@@ -456,13 +462,13 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     append_uuid(lst_clip_seq)
     #write the final list of SeqRecord to the tab file
     write_tab_file(tabfname, lst_clip_seq)
-    
+
     if germ:
         ## Only if preparing a germline tab
         #find an appropriate name for the germline tab file
         germtabfname = germtabname(tabfname)
         write_germ_tab_file(germtabfname, lst_germline)
-    
+
     return None
 
 def mask_by_option(lst_clip_seq, dict_germline=None, mask=None):
@@ -560,7 +566,7 @@ def _tabmod():
             help="""The TAB file(s) to which to append UUIDs.
             """
             )
-#    parser_uuid.set_defaults(func=add_uuid_tabfile)
+    # parser_uuid.set_defaults(func=add_uuid_tabfile)
     argspace = parser.parse_args()
     if argspace.action == 'u':
         length = getattr(argspace, 'length', n_char)
