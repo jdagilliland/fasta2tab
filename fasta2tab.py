@@ -518,22 +518,60 @@ def _main():
     parser = argparse.ArgumentParser(
         description='Convert FASTA files to TAB files'
         )
-    parser.add_argument('files', metavar='infiles', nargs='+')
+    parser.add_argument('files', metavar='infiles', nargs='+',
+            help="""
+            FASTA files to convert into TAB files.
+            They can be either treated individually or as a group,
+            depending on '-c'.
+            """,
+            )
     parser.add_argument('-m', '--mask',
-        choices=['same_null','same_mask','germ_null','germ_mask'],
-        default='same_null',
-        )
+            choices=['same_null','same_mask','germ_null','germ_mask'],
+            default='same_null',
+            help="""
+            DEPRECATED:
+            This option is to modify how the column
+            'GERMLINE_GAP_D_MASK' is populated.
+            There is no reason to use this option unless you are
+            generating a TAB file to work with the legacy auto phylip
+            program written in R by Jason Van Der Heiden.
+            (default: 'same_null')
+            """,
+            )
     parser.add_argument('-g', '--germ',
-        dest='germ',
-        action='store_true',
-        )
+            dest='germ',
+            action='store_true',
+            help="""
+            Whether or not the generate a separate TAB file that
+            includes germline sequences found in the input FASTA files.
+            This option was required for an older workflow, where
+            germline sequences would be manually integrated into output
+            TAB files. (default: False)
+            """,
+            )
     parser.add_argument('-c', '--combine',
-        dest='tabfname',
-        nargs='?', const='tabfile.tab', default=None,
-        )
+            dest='tabfname',
+            nargs='?', const='tabfile.tab', default=None,
+            help="""
+            If specified, it treats the input FASTA files as
+            meaningfully related, and joints them into a single TAB
+            file.
+            If a filename is provided as well, that name is used,
+            otherwise a default name is used. (default: 'tabfile.tab')
+            """,
+            )
     parser.add_argument('-i', '--integrate',
             dest='integrate',
             action='store_true',
+            help="""
+            Whether or not to integrate germline sequences from the
+            input FASTA files into the output TAB file[s].
+            Germline sequences are output all prior to regular
+            sequences, and they do not receive UUIDs, so they can have
+            collisions depending on their names.
+            The way this option works may be changed in future versions.
+            (default: False)
+            """,
             )
     argspace = parser.parse_args()
     mask_mode = argspace.mask
