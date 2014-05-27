@@ -1,1 +1,5 @@
+v0.1.1 2014-05-26 --
+- Change handling of germline sequences for a more convenient workflow
+- Add entry point to add UUIDs to entries in a TAB file
+
 v0.1.0 2014-04-22 -- Initial release.

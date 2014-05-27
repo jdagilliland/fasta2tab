@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
         name='fasta2tab',
-        version='0.1.0',
+        version='0.1.1',
         author='J. D. A. Gilliland',
         author_email='jdagilliland@gmail.com',
         py_modules=['fasta2tab'],
