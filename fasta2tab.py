@@ -44,7 +44,7 @@ tpl_cols_0 = (
     'GERMLINE_GAP_D_MASK',
     'FASTA',
     )
-tpl_cols1 = (
+tpl_cols_1 = (
     'order',
     'seqID',
     'functional',
@@ -97,6 +97,37 @@ class ClipRecord(object):
             setattr(cls, 'header_rev', header_rev)
         return None
 
+    @classmethod
+    def append_uuid(cls, lst_seq_record, **kwarg):
+        '''
+        Accepts a list of Bio.SeqRecord, compute a unique
+        identifier for each, and append it to the 'SEQUENCE_ID' string of each
+        SeqRecord.
+
+        Parameters
+        ----------
+        length : int
+            The length of UUID to append, default `n_char`.
+        column : str
+            The label of the column to which to append the UUID.
+        '''
+        n_id = len(lst_seq_record)
+        lst_uuid = get_n_uuid(n_id, **kwarg)
+        if cls.header_rev == 0:
+            column = kwarg.pop('column', 'SEQUENCE_ID')
+        elif cls.header_rev == 1:
+            column = kwarg.pop('column', 'seqID')
+        else:
+            column = kwarg.pop('column', 'SEQUENCE_ID')
+        for iI, record in enumerate(lst_seq_record):
+            try:
+                setattr(record, column,
+                        getattr(record, column, '') + lst_uuid[iI])
+            except:
+                print(record.description)
+                print(dir(record))
+                raise
+
     def __init__(self, seq_record, **kwarg):
         header_rev = kwarg.pop('header_rev', False)
         if header_rev:
@@ -107,7 +138,7 @@ class ClipRecord(object):
         self.SEQUENCE = str(self.seq_record.seq).lower()
         # set fields from FASTA header row
         self._set_from_header()
-        if self.header_rev = 0:
+        if self.header_rev == 0:
             if hasattr(self, 'CLONE_ID'):
                 if self.CLONE_ID[:9] == 'Germline:':
                     self.CLONE = self.CLONE_ID[9:]
@@ -120,7 +151,7 @@ class ClipRecord(object):
                     self.INDELS = 'F'
             if not hasattr(self, 'INDELS'):
                 self.INDELS = 'F'
-        elif self.header_rev = 1:
+        elif self.header_rev == 1:
             if hasattr(self, 'cloneID'):
                 if self.cloneID[:9] == 'Germline:':
                     self.clone = self.cloneID[9:]
@@ -283,30 +314,6 @@ def prune_germline_records(lst_seq_record):
         record.description[0] !='>']
     return lst_germline, lst_non_germline
 
-def append_uuid(lst_seq_record, **kwarg):
-    '''
-    Accepts a list of Bio.SeqRecord, compute a unique
-    identifier for each, and append it to the 'SEQUENCE_ID' string of each
-    SeqRecord.
-
-    Parameters
-    ----------
-    length : int
-        The length of UUID to append, default `n_char`.
-    column : str
-        The label of the column to which to append the UUID.
-    '''
-    n_id = len(lst_seq_record)
-    lst_uuid = get_n_uuid(n_id, **kwarg)
-    column = kwarg.pop('column', 'SEQUENCE_ID')
-    for iI, record in enumerate(lst_seq_record):
-        try:
-            setattr(record, column,
-                    getattr(record, column, '') + lst_uuid[iI])
-        except:
-            print(record.description)
-            print(dir(record))
-            raise
 
 def tabname(fastaname):
     '''
@@ -382,15 +389,16 @@ def _get_fields(lst_seq_record, **kwarg):
             if (field not in tpl_fields)])
     return tpl_fields
 
-def add_uuid_tabfile(tabfname, **kwarg):
+def add_uuid_tabfile(tabinname, **kwarg):
     '''
     Append a UUID to each entry in a tabfile.
     '''
-    lst_cliprec = ClipRecord.from_tabfile(tabfname)
-    print(len(lst_cliprec))
-    append_uuid(lst_cliprec)
-    print(len(lst_cliprec))
-    write_tab_file(tabfname, lst_cliprec)
+    ## If no taboutname specified, use the same file.
+    ## This behavior may need to be changed later.
+    taboutname = kwarg.pop('taboutname', tabinname)
+    lst_cliprec = ClipRecord.from_tabfile(tabinname)
+    ClipRecord.append_uuid(lst_cliprec)
+    write_tab_file(taboutname, lst_cliprec)
     return None
 
 def write_tab_file(fname_tab,lst_seq_record):
@@ -588,7 +596,7 @@ def seqrecords2tab(lst_seq_record, **kwarg):
     #parse supplementary attributes
     mask_by_option(lst_clip_seq, dict_germline=dict_germline, mask=mask)
     #append uuid portion to SEQUENCE_ID
-    append_uuid(lst_clip_seq)
+    ClipRecord.append_uuid(lst_clip_seq)
     if integrate:
         # If told to integrate germline sequences, prepend those to the
         # list of clip seq.
@@ -695,9 +703,8 @@ def _main():
             (default: False)
             """,
             )
-    parser.add_argument('-h', '--header',
+    parser.add_argument('-r', '--header',
             dest='header',
-            nargs=1,
             default=1,
             type=int,
             help="""
@@ -732,6 +739,28 @@ def _tabmod():
     parser = argparse.ArgumentParser(
         description='Modify TAB files in various ways'
         )
+    parser.add_argument('lst_file', metavar='FILES',
+            nargs='+',
+            help="""The TAB file(s) to which to append UUIDs.
+            """
+            )
+    parser.add_argument('-r', '--header',
+            dest='header',
+            default=1,
+            type=int,
+            help="""
+            If specified, one can change the version of headers to use.
+            Old-style headers are 0, new-style headers are 1 (default).
+            """,
+            )
+    parser.add_argument('-o', '--output',
+            dest='output',
+            help="""
+            If specified, place the modified TAB file at this path
+            (instead of in place).
+            This option should only be used for 1 at a time TAB files.
+            """,
+            )
     subparsers = parser.add_subparsers(help="""
             Choose from available subcommands
             """,
@@ -749,17 +778,26 @@ def _tabmod():
             The character set from which the UUID is chosen is: '{chars}'.
             """.format(num=n_char,chars=charset),
             )
-    parser_uuid.add_argument('lst_file', metavar='FILES',
-            nargs='+',
-            help="""The TAB file(s) to which to append UUIDs.
-            """
-            )
     # parser_uuid.set_defaults(func=add_uuid_tabfile)
     argspace = parser.parse_args()
     if argspace.action == 'u':
+        ClipRecord.set_header_rev(argspace.header)
         length = getattr(argspace, 'length', n_char)
-        for tabfile in argspace.lst_file:
-            add_uuid_tabfile(tabfile, length=length)
+        if hasattr(argspace, 'output') and len(argspace.lst_file) > 1:
+            print('''Output file should not be specified with more than
+            one input file.''')
+            raise
+        if len(argspace.lst_file) == 1 and argspace.output:
+            tabfile = argspace.lst_file[0]
+            add_uuid_tabfile(tabfile,
+                    taboutname=getattr(argspace, 'output', tabfile),
+                    length=length,
+                    )
+        else:
+            for tabfile in argspace.lst_file:
+                add_uuid_tabfile(tabfile,
+                        length=length,
+                        )
     return None
 
 if __name__ == '__main__':
