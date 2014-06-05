@@ -160,13 +160,22 @@ class ClipRecord(object):
         '''
         Creates a list of ClipRecord instances from a pre-existing TAB file.
         '''
-        with open(tabfname,'rb') as tabf:
+        with open(tabfname,'rU') as tabf:
             reader = csv.DictReader(tabf, delimiter='\t')
             lst_cliprec = list()
             for entrydict in reader:
                 cliprec = cls.__new__(cls)
                 for key, val  in entrydict.items():
-                    setattr(cliprec, key, val)
+                    try:
+                        setattr(cliprec, key, val)
+                    except TypeError:
+                        print('Error setting attribute-------------------')
+                        print(cliprec)
+                        print(key)
+                        print(val)
+                        print('-------------------------------------------')
+                        # raise
+                        pass
                 lst_cliprec.append(cliprec)
         return lst_cliprec
     pass
