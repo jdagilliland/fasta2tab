@@ -12,7 +12,7 @@ charset = string.letters + string.digits
 # the number of characters to use for sequence UUIDs
 n_char = 8
 # these are the columns to output in the tab file
-tpl_cols = (
+tpl_cols_0 = (
     'SEQUENCE_ID',
     'SEQUENCE',
     'FUNCTIONAL',
@@ -44,32 +44,90 @@ tpl_cols = (
     'GERMLINE_GAP_D_MASK',
     'FASTA',
     )
+tpl_cols1 = (
+    'order',
+    'seqID',
+    'functional',
+    'in-frame',
+    'stop',
+    'mutation_invariate',
+    'v_match',
+    'v_length',
+    'j_match',
+    'j_length',
+    'v_call',
+    'j_call',
+    'v_gap_length',
+    'j_gap_length',
+    'juncton_gap_length',
+    'junction_nt',
+    'junction_aa',
+    'gap_method',
+    'subject',
+    'subset',
+    'tissue',
+    'disease',
+    'date',
+    'lab',
+    'experimenter',
+    'copy_number_close',
+    'collapse_to_close',
+    'copy_number_iden',
+    'collapse_to_iden',
+    'sequence',
+    'germline',
+    'cloneID',
+        )
 class HeaderError(ValueError):
+    pass
+class InvalidHeaderStyle(ValueError):
     pass
 class ClipRecord(object):
     mask_char = 'n'
     field_sep = '|'
     colon = ':'
+    header_rev = 1
 
-    def __init__(self, seq_record):
+    @classmethod
+    def set_header_rev(cls, header_rev):
+        if header_rev not in [0, 1]:
+            raise InvalidHeaderStyle(
+                    'Invalid header_rev: {:d}'.format(header_rev))
+        else:
+            setattr(cls, 'header_rev', header_rev)
+        return None
+
+    def __init__(self, seq_record, **kwarg):
+        header_rev = kwarg.pop('header_rev', False)
+        if header_rev:
+            self.header_rev = header_rev
         self.seq_record = seq_record
         self.description = self.seq_record.description
         self.seq = self.seq_record.seq
         self.SEQUENCE = str(self.seq_record.seq).lower()
         # set fields from FASTA header row
         self._set_from_header()
-        if hasattr(self, 'CLONE_ID'):
-            if self.CLONE_ID[:9] == 'Germline:':
-                self.CLONE = self.CLONE_ID[9:]
-            else:
-                self.CLONE = self.CLONE_ID
-        if hasattr(self, 'SEQUENCE'):
-            self.SEQUENCE_GAP = self.SEQUENCE
-        if hasattr(self, 'INDELS'):
-            if self.INDELS != 'T':
+        if self.header_rev = 0:
+            if hasattr(self, 'CLONE_ID'):
+                if self.CLONE_ID[:9] == 'Germline:':
+                    self.CLONE = self.CLONE_ID[9:]
+                else:
+                    self.CLONE = self.CLONE_ID
+            if hasattr(self, 'SEQUENCE'):
+                self.SEQUENCE_GAP = self.SEQUENCE
+            if hasattr(self, 'INDELS'):
+                if self.INDELS != 'T':
+                    self.INDELS = 'F'
+            if not hasattr(self, 'INDELS'):
                 self.INDELS = 'F'
-        if not hasattr(self, 'INDELS'):
-            self.INDELS = 'F'
+        elif self.header_rev = 1:
+            if hasattr(self, 'cloneID'):
+                if self.cloneID[:9] == 'Germline:':
+                    self.clone = self.cloneID[9:]
+                else:
+                    self.clone = self.cloneID
+        else:
+            raise InvalidHeaderStyle()
         return None
 
     def _set_from_header(self):
@@ -110,11 +168,19 @@ class ClipRecord(object):
         GERMLINE_GAP_D_MASK.
         '''
         # check to make sure that the ClipRecord instance has all the necessary fields
-        #if not has_attr(self,...)
-        v_length = int(self.V_LENGTH)
-        j_length = int(self.J_LENGTH)
-        self.GERMLINE_GAP_D_MASK = mask_d_region_length(
-            self.SEQUENCE, v_length, j_length, mask_char=self.mask_char)
+        # if not has_attr(self,...)
+        if self.header_rev == 0:
+            v_length = int(self.V_LENGTH)
+            j_length = int(self.J_LENGTH)
+            self.GERMLINE_GAP_D_MASK = mask_d_region_length(
+                self.SEQUENCE, v_length, j_length, mask_char=self.mask_char)
+        elif self.header_rev == 1:
+            v_length = int(self.v_length)
+            j_length = int(self.j_length)
+            self.germline_gap_d_mask = mask_d_region_length(
+                self.sequence, v_length, j_length, mask_char=self.mask_char)
+        else:
+            raise InvalidHeaderStyle()
         pass
 
     def d_no_mask(self):
@@ -122,19 +188,34 @@ class ClipRecord(object):
         This method takes the sequence data and copies it into
         GERMLINE_GAP_D_MASK without actually masking the D region.
         '''
-        self.GERMLINE_GAP_D_MASK = self.SEQUENCE
-        pass
+        if self.header_rev == 0:
+            self.GERMLINE_GAP_D_MASK = self.SEQUENCE
+        elif self.header_rev == 1:
+            self.germline_gap_d_mask = self.sequence
+        else:
+            raise InvalidHeaderStyle()
+        return None
     def germline_d_no_mask(self, dict_germline):
         '''
         This method populates the GERMLINE_GAP_D_MASK field with the
         appropriate sequence from the germline entries.
         '''
-        try:
-            self.GERMLINE_GAP_D_MASK = dict_germline[self.CLONE]
-        except KeyError:
-            print('Unable to find germline matching clone: {clone}'.format(
-                clone=self.CLONE))
-            raise
+        if self.header_rev == 0:
+            try:
+                self.GERMLINE_GAP_D_MASK = dict_germline[self.CLONE]
+            except KeyError:
+                print('Unable to find germline matching clone: {clone}'.format(
+                    clone=self.CLONE))
+                raise
+        elif self.header_rev == 1:
+            try:
+                self.germline_gap_d_mask = dict_germline[self.clone]
+            except KeyError:
+                print('Unable to find germline matching clone: {clone}'.format(
+                    clone=self.cloneID))
+                raise
+        else:
+            raise InvalidHeaderStyle()
         pass
 
     def prep_germ(self):
@@ -142,17 +223,32 @@ class ClipRecord(object):
         This method prepares a ClipRecord instance for entry into a germline
         TAB file.
         '''
-        if hasattr(self,'Germline'):
-            self.SEQUENCE_ID = getattr(self,'Germline')
-        elif hasattr(self,'>Germline'):
-            self.SEQUENCE_ID = getattr(self,'>Germline')
-        elif hasattr(self,'>GERMLINE'):
-            self.SEQUENCE_ID = getattr(self,'>GERMLINE')
+        if self.header_rev == 0:
+            if hasattr(self,'Germline'):
+                self.SEQUENCE_ID = getattr(self,'Germline')
+            elif hasattr(self,'>Germline'):
+                self.SEQUENCE_ID = getattr(self,'>Germline')
+            elif hasattr(self,'>GERMLINE'):
+                self.SEQUENCE_ID = getattr(self,'>GERMLINE')
+            else:
+                print(self.description)
+                warnings.warn(
+                    '''The above header had no suitable 'Germline' field.''')
+                # raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
+        elif self.header_rev == 1:
+            if hasattr(self,'Germline'):
+                self.seqID = getattr(self,'Germline')
+            elif hasattr(self,'>Germline'):
+                self.seqID = getattr(self,'>Germline')
+            elif hasattr(self,'>GERMLINE'):
+                self.seqID = getattr(self,'>GERMLINE')
+            else:
+                print(self.description)
+                warnings.warn(
+                    '''The above header had no suitable 'Germline' field.''')
+                # raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
         else:
-            print(self.description)
-            warnings.warn(
-                '''The above header had no suitable 'Germline' field.''')
-            # raise HeaderError('''ClipRecord object has no suitable 'Germline' field.''')
+            raise InvalidHeaderStyle()
         pass
 
     @classmethod
@@ -188,12 +284,16 @@ def append_uuid(lst_seq_record, **kwarg):
     ----------
     length : int
         The length of UUID to append, default `n_char`.
+    column : str
+        The label of the column to which to append the UUID.
     '''
     n_id = len(lst_seq_record)
     lst_uuid = get_n_uuid(n_id, **kwarg)
+    column = kwarg.pop('column', 'SEQUENCE_ID')
     for iI, record in enumerate(lst_seq_record):
         try:
-            record.SEQUENCE_ID = getattr(record,'SEQUENCE_ID','') + lst_uuid[iI]
+            setattr(record, column,
+                    getattr(record, column, '') + lst_uuid[iI])
         except:
             print(record.description)
             print(dir(record))
@@ -219,10 +319,13 @@ def read_fasta_file(fname_fasta):
     of object that will contain all of the metadata about a sequence
     and the sequence itself.
     Likely, it will use attribute names like:
-    SEQUENCE_ID
-    SEQUENCE_GAP
-    GERMLINE_GAP_DMASK
-    CLONE_ID
+    [
+    SEQUENCE_ID,
+    SEQUENCE_GAP,
+    GERMLINE_GAP_DMASK,
+    CLONE_ID,
+    ]
+    or hopefully it will use the new-style headers.
     '''
     f = open(fname_fasta,'r')
     lst_seq_record = [record for record in SeqIO.parse(f,'fasta')]
@@ -235,11 +338,11 @@ def read_fasta_file(fname_fasta):
             print('Sequence with invalid header')
             continue
     for record in lst_clip_record:
-        setattr(record, 'FASTA', os.path.basename(fname_fasta))
+        setattr(record, 'fasta', os.path.basename(fname_fasta))
 
     return lst_clip_record
 
-def _get_fields(lst_seq_record):
+def _get_fields(lst_seq_record, **kwarg):
     """
     Get the fields that should always be included, plus the uppercase ones
     from a list of `Bio.SeqRecord` instances.
@@ -248,16 +351,26 @@ def _get_fields(lst_seq_record):
     ----------
     lst_seq_record : list
         A list of `Bio.SeqRecord` instances.
+    header_rev : int
+        Which revision of the header spec to use. 0 for old-style header
+        spec, 1 for new-style header spec. (default: 1)
 
     Returns
     -------
     tpl_fields : tuple
         A tuple of the fields.
     """
-    tpl_fields = list(tpl_cols)
+    # Use header_rev to determine which set of headers to use.
+    header_rev = kwarg.pop('header_rev', 1)
+    if header_rev == 0:
+        tpl_fields = list(tpl_cols_0)
+    elif header_rev == 1:
+        tpl_fields = list(tpl_cols_1)
+    else:
+        raise ValueError('Invlalid header_rev: {:d}'.format(header_rev))
     for seq_record in lst_seq_record:
         tpl_fields.extend([field for field in vars(seq_record)
-            if (field.isupper() and field not in tpl_fields)])
+            if (field not in tpl_fields)])
     return tpl_fields
 
 def add_uuid_tabfile(tabfname, **kwarg):
@@ -573,8 +686,19 @@ def _main():
             (default: False)
             """,
             )
+    parser.add_argument('-h', '--header',
+            dest='header',
+            nargs=1,
+            default=1,
+            type=int,
+            help="""
+            If specified, one can change the version of headers to use.
+            Old-style headers are 0, new-style headers are 1 (default).
+            """,
+            )
     argspace = parser.parse_args()
     mask_mode = argspace.mask
+    ClipRecord.set_header_rev(argspace.header)
     if argspace.tabfname == None:
         # No output tabfile name was specified, therefore treat each input
         # fasta file individually.
