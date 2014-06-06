@@ -292,7 +292,7 @@ class ClipRecord(object):
             lst_cliprec = list()
             for entrydict in reader:
                 cliprec = cls.__new__(cls)
-                for key, val  in entrydict.items():
+                for key, val in entrydict.items():
                     try:
                         setattr(cliprec, key, val)
                     except TypeError:
@@ -783,7 +783,8 @@ def _tabmod():
     if argspace.action == 'u':
         ClipRecord.set_header_rev(argspace.header)
         length = getattr(argspace, 'length', n_char)
-        if hasattr(argspace, 'output') and len(argspace.lst_file) > 1:
+        if (hasattr(argspace, 'output') and argspace.output
+            and len(argspace.lst_file) > 1):
             print('''Output file should not be specified with more than
             one input file.''')
             raise
