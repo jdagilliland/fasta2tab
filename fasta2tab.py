@@ -78,6 +78,7 @@ tpl_cols_1 = (
     'germline',
     'cloneID',
         )
+tpl_cols = tpl_cols_1
 class HeaderError(ValueError):
     pass
 class InvalidHeaderStyle(ValueError):
@@ -435,7 +436,7 @@ def write_germ_tab_file(fname_tab,lst_seq_record):
     from each, and write them to an appropriately formatted tab file.
     '''
     with open(fname_tab,'w') as f:
-        tab_writer = csv.DictWriter(f, tpl_cols, extrasaction='ignore',
+        tab_writer = csv.DictWriter(f, tpl_cols_1, extrasaction='ignore',
             delimiter='\t')
         # write header
         tab_writer.writeheader()
